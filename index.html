@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Home Maintenance Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+      <symbol id="ico-export" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 10V2m0 0L5 5m3-3l3 3M2 10v3h12v-3"/>
+      </symbol>
+      <symbol id="ico-import" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2v8m0 0l3-3m-3 3L5 7M2 12v2h12v-2"/>
+      </symbol>
+      <symbol id="ico-sync" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 8a6 6 0 0110.472-4M14 2v4h-4"/>
+        <path d="M14 8a6 6 0 01-10.472 4M2 14v-4h4"/>
+      </symbol>
+    </svg>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>home care</h1>
+            <div class="header-actions">
+                <button id="sync-btn" class="btn btn-secondary" title="Sync with partner (right-click for settings)">
+                    <svg class="icon" width="16" height="16"><use href="#ico-sync"/></svg>
+                    <span id="sync-status" class="sync-status-text"></span>
+                </button>
+                <button id="focus-mode-btn" class="btn btn-secondary" title="Focus Mode - Show only today's top 3">
+                    focus
+                </button>
+                <button id="export-btn" class="btn btn-secondary" title="Export Data">
+                    <svg class="icon" width="16" height="16"><use href="#ico-export"/></svg>
+                </button>
+                <label class="btn btn-secondary import-label" title="Import Data">
+                    <svg class="icon" width="16" height="16"><use href="#ico-import"/></svg>
+                    <input type="file" id="import-input" accept=".json" hidden>
+                </label>
+            </div>
+        </header>
+
+        <!-- Quick Stats Banner -->
+        <div class="stats-banner">
+            <div class="stat" id="stat-overdue">
+                <span class="stat-number">0</span>
+                <span class="stat-label">overdue</span>
+            </div>
+            <div class="stat" id="stat-today">
+                <span class="stat-number">0</span>
+                <span class="stat-label">today</span>
+            </div>
+            <div class="stat" id="stat-week">
+                <span class="stat-number">0</span>
+                <span class="stat-label">this week</span>
+            </div>
+            <div class="stat" id="stat-streak">
+                <span class="stat-number">0</span>
+                <span class="stat-label">day streak</span>
+            </div>
+            <div class="stat" id="stat-paused" style="display:none">
+                <span class="stat-number">0</span>
+                <span class="stat-label">paused</span>
+            </div>
+        </div>
+
+        <!-- Executive Function Helper Banner -->
+        <div id="ef-helper" class="ef-helper hidden">
+            <div class="ef-content">
+                <span class="ef-icon">*</span>
+                <span class="ef-message">Feeling overwhelmed? Just pick ONE thing. Any one thing.</span>
+                <button class="ef-pick-one btn btn-primary">Pick for me</button>
+                <button class="ef-dismiss">x</button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="today">today</button>
+            <button class="tab-btn" data-tab="week">this week</button>
+            <button class="tab-btn" data-tab="all">all tasks</button>
+            <button class="tab-btn" data-tab="batch">batch mode</button>
+            <button class="tab-btn" data-tab="systems">systems</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Today View -->
+            <section id="today-view" class="tab-content active">
+                <div class="view-header">
+                    <h2>today's tasks</h2>
+                    <span class="date-display" id="today-date"></span>
+                </div>
+
+                <!-- Routines Quick-Access -->
+                <div id="routines-banner" class="routines-banner">
+                    <div class="routine-card" data-routine="morning">
+                        <span class="routine-icon">morning</span>
+                        <div class="routine-info">
+                            <strong>morning reset</strong>
+                            <span class="routine-time">~5 min</span>
+                        </div>
+                        <button class="routine-toggle btn btn-small" data-routine="morning">Start</button>
+                    </div>
+                    <div class="routine-card" data-routine="evening">
+                        <span class="routine-icon">evening</span>
+                        <div class="routine-info">
+                            <strong>evening reset</strong>
+                            <span class="routine-time">~5-10 min</span>
+                        </div>
+                        <button class="routine-toggle btn btn-small" data-routine="evening">Start</button>
+                    </div>
+                </div>
+
+                <!-- Contextual Tip -->
+                <div id="contextual-tip" class="contextual-tip hidden">
+                    <span class="tip-icon">*</span>
+                    <span class="tip-text"></span>
+                    <button class="tip-dismiss">x</button>
+                </div>
+
+                <!-- Overdue Section -->
+                <div id="overdue-section" class="task-section overdue-section hidden">
+                    <h3 class="section-title">overdue</h3>
+                    <div id="overdue-tasks" class="task-list"></div>
+                </div>
+
+                <!-- Today Section -->
+                <div class="task-section">
+                    <h3 class="section-title">due today</h3>
+                    <div id="today-tasks" class="task-list"></div>
+                    <div id="today-empty" class="empty-state hidden">
+                        <span class="empty-icon">~</span>
+                        <p>Nothing due today! You're all caught up.</p>
+                    </div>
+                </div>
+
+                <!-- Quick Wins Section -->
+                <div id="quick-wins-section" class="task-section">
+                    <h3 class="section-title">quick wins (under 5 min)</h3>
+                    <div id="quick-wins-tasks" class="task-list"></div>
+                </div>
+            </section>
+
+            <!-- Week View -->
+            <section id="week-view" class="tab-content">
+                <div class="view-header">
+                    <h2>this week</h2>
+                </div>
+                <div id="week-tasks" class="task-list"></div>
+            </section>
+
+            <!-- All Tasks View -->
+            <section id="all-view" class="tab-content">
+                <div class="view-header">
+                    <h2>all tasks</h2>
+                    <div class="filter-controls">
+                        <select id="category-filter" class="filter-select">
+                            <option value="all">all categories</option>
+                        </select>
+                        <select id="assignee-filter" class="filter-select">
+                            <option value="all">all assignees</option>
+                            <option value="Katherine">Katherine</option>
+                            <option value="Winston">Winston</option>
+                            <option value="Either">Either</option>
+                        </select>
+                        <select id="frequency-filter" class="filter-select">
+                            <option value="all">all frequencies</option>
+                            <option value="daily">daily</option>
+                            <option value="weekly">weekly</option>
+                            <option value="biweekly">every 2 weeks</option>
+                            <option value="monthly">monthly</option>
+                            <option value="quarterly">quarterly</option>
+                            <option value="biannual">twice a year</option>
+                            <option value="annual">yearly</option>
+                        </select>
+                        <select id="status-filter" class="filter-select">
+                            <option value="active">active tasks</option>
+                            <option value="paused">paused tasks</option>
+                            <option value="all">all tasks</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Category Tip Banner (shows when filtering) -->
+                <div id="category-tip-banner" class="category-tip-banner hidden"></div>
+                <div id="all-tasks" class="task-list grouped"></div>
+            </section>
+
+            <!-- Batch Mode View -->
+            <section id="batch-view" class="tab-content">
+                <div class="view-header">
+                    <h2>batch mode</h2>
+                    <p class="view-description">Group similar tasks together to knock them out efficiently</p>
+                </div>
+                <div class="batch-options">
+                    <button class="batch-btn" data-batch="location">by location</button>
+                    <button class="batch-btn" data-batch="duration">by duration</button>
+                    <button class="batch-btn" data-batch="supplies">by supplies</button>
+                </div>
+                <div id="batch-results" class="batch-results"></div>
+            </section>
+
+            <!-- Systems View (Organization Guide) -->
+            <section id="systems-view" class="tab-content">
+                <div class="view-header">
+                    <h2>systems + tips</h2>
+                    <p class="view-description">Organization principles designed for how your brain actually works</p>
+                </div>
+
+                <!-- Core Rules -->
+                <div class="systems-section">
+                    <h3 class="systems-section-title">core rules</h3>
+                    <div id="core-rules" class="core-rules-grid"></div>
+                </div>
+
+                <!-- Daily Routines -->
+                <div class="systems-section">
+                    <h3 class="systems-section-title">daily routines</h3>
+                    <div id="routines-list" class="routines-list"></div>
+                </div>
+
+                <!-- Problem Guides -->
+                <div class="systems-section">
+                    <h3 class="systems-section-title">common challenges</h3>
+                    <div id="problem-guides" class="problem-guides"></div>
+                </div>
+
+                <!-- Room Setup -->
+                <div class="systems-section">
+                    <h3 class="systems-section-title">room-by-room setup</h3>
+                    <div id="room-setup" class="room-setup-grid"></div>
+                </div>
+
+                <!-- Golden Rule -->
+                <div id="golden-rule" class="golden-rule-card"></div>
+            </section>
+        </main>
+
+        <!-- Add Task FAB -->
+        <button id="add-task-fab" class="fab" title="Add Custom Task">+</button>
+
+        <!-- Task Modal -->
+        <div id="task-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">task details</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="task-form">
+                        <input type="hidden" id="task-id">
+
+                        <div class="form-group">
+                            <label for="task-name">task name</label>
+                            <input type="text" id="task-name" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="task-category">category</label>
+                            <select id="task-category" required>
+                                <option value="kitchen">kitchen</option>
+                                <option value="bathroom">bathroom</option>
+                                <option value="bedroom">bedroom</option>
+                                <option value="living">living areas</option>
+                                <option value="laundry">laundry</option>
+                                <option value="arthur">arthur</option>
+                                <option value="health">health + personal</option>
+                                <option value="outdoor">outdoor / balcony</option>
+                                <option value="maintenance">home maintenance</option>
+                                <option value="seasonal">seasonal</option>
+                                <option value="admin">admin / supplies</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="task-frequency">frequency</label>
+                                <select id="task-frequency" required>
+                                    <option value="daily">daily</option>
+                                    <option value="weekly">weekly</option>
+                                    <option value="biweekly">every 2 weeks</option>
+                                    <option value="monthly">monthly</option>
+                                    <option value="quarterly">quarterly</option>
+                                    <option value="biannual">twice a year</option>
+                                    <option value="annual">yearly</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="task-duration">duration</label>
+                                <select id="task-duration">
+                                    <option value="2">~2 min</option>
+                                    <option value="5">~5 min</option>
+                                    <option value="10">~10 min</option>
+                                    <option value="15">~15 min</option>
+                                    <option value="30">~30 min</option>
+                                    <option value="60">~1 hour</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="task-assignee">assigned to</label>
+                            <select id="task-assignee">
+                                <option value="Either">either person</option>
+                                <option value="Katherine">Katherine</option>
+                                <option value="Winston">Winston</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="task-location">location</label>
+                            <select id="task-location">
+                                <option value="kitchen">kitchen</option>
+                                <option value="bathroom">bathroom</option>
+                                <option value="bedroom">bedroom</option>
+                                <option value="living">living room</option>
+                                <option value="laundry">laundry area</option>
+                                <option value="outdoor">outdoor / balcony</option>
+                                <option value="whole-home">whole home</option>
+                                <option value="personal">personal</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="task-supplies">supplies needed</label>
+                            <input type="text" id="task-supplies" placeholder="e.g., cleaning spray, microfiber cloth">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="task-notes">notes / instructions</label>
+                            <textarea id="task-notes" rows="2" placeholder="Optional: How to do this task"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="delete-task-btn">delete</button>
+                            <button type="button" class="btn btn-secondary" id="pause-task-btn">pause</button>
+                            <button type="submit" class="btn btn-primary">save task</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routine Checklist Modal -->
+        <div id="routine-modal" class="modal hidden">
+            <div class="modal-content routine-modal-content">
+                <div class="modal-header">
+                    <h3 id="routine-modal-title">morning reset</h3>
+                    <button class="modal-close routine-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="routine-checklist" class="routine-checklist"></div>
+                    <div class="routine-done-section hidden" id="routine-done">
+                        <p>All done! Great job.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Completion Celebration -->
+        <div id="celebration" class="celebration hidden">
+            <div class="celebration-content">
+                <p class="celebration-text">Nice work!</p>
+            </div>
+        </div>
+
+        <!-- Sync Config Modal -->
+        <div id="sync-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>sync settings</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p class="sync-description">
+                        Share tasks between you and your partner via a GitHub repository.
+                        Both of you can use the same tracker and stay in sync.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="sync-username">your name</label>
+                        <select id="sync-username">
+                            <option value="Katherine">Katherine</option>
+                            <option value="Winston">Winston</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sync-repo">github repo</label>
+                        <input type="text" id="sync-repo" placeholder="username/household-tracker">
+                        <small class="form-hint">e.g., katherine/household-tracker</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sync-token">github token</label>
+                        <input type="password" id="sync-token" placeholder="ghp_xxxxxxxxxxxx">
+                        <small class="form-hint">
+                            <a href="https://github.com/settings/tokens/new?scopes=repo&description=household-tracker" target="_blank" rel="noopener">
+                                create a token here
+                            </a>
+                            (needs repo access)
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sync-branch">branch</label>
+                        <input type="text" id="sync-branch" placeholder="main" value="main">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('sync-modal').classList.add('hidden')">cancel</button>
+                        <button type="button" class="btn btn-primary" id="sync-save-btn">save + sync</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="tasks-database.js"></script>
+    <script src="tips-database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1150,6 +1150,164 @@ class HouseholdTracker {
     }
 
     // =========================================
+    // MANAGE MODE - Bulk task curation
+    // =========================================
+
+    enterManageMode() {
+        this.manageMode = true;
+        this.manageActions = {}; // taskId -> 'keep' | 'pause' | 'delete'
+
+        // Hide normal view, show manage view
+        document.getElementById('all-tasks')?.classList.add('hidden');
+        document.querySelector('#all-view .filter-controls')?.classList.add('hidden');
+        document.getElementById('category-tip-banner')?.classList.add('hidden');
+        document.getElementById('manage-mode')?.classList.remove('hidden');
+        document.getElementById('manage-mode-btn').textContent = 'cancel';
+
+        // Populate manage category filter
+        const select = document.getElementById('manage-category-filter');
+        if (select) {
+            select.innerHTML = '<option value="all">all categories</option>';
+            Object.keys(CATEGORIES).forEach(key => {
+                const cat = CATEGORIES[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        }
+
+        this.renderManageList();
+    }
+
+    exitManageMode() {
+        this.manageMode = false;
+
+        // Apply all pending actions
+        let kept = 0, paused = 0, deleted = 0;
+        Object.entries(this.manageActions).forEach(([taskId, action]) => {
+            if (action === 'delete') {
+                this.tasks = this.tasks.filter(t => t.id !== taskId);
+                deleted++;
+            } else if (action === 'pause') {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (task) { task.paused = true; task.pausedAt = new Date().toISOString(); }
+                paused++;
+            }
+            // 'keep' = no change needed
+        });
+
+        this.saveTasks();
+
+        // Restore normal view
+        document.getElementById('all-tasks')?.classList.remove('hidden');
+        document.querySelector('#all-view .filter-controls')?.classList.remove('hidden');
+        document.getElementById('manage-mode')?.classList.add('hidden');
+        document.getElementById('manage-mode-btn').textContent = 'manage';
+
+        this.render();
+        this.updateStats();
+
+        this.manageActions = {};
+    }
+
+    renderManageList(filterCategory = 'all') {
+        const container = document.getElementById('manage-list');
+        if (!container) return;
+
+        let tasks = this.tasks.filter(t => !t.paused); // Only show active tasks to manage
+        if (filterCategory !== 'all') {
+            tasks = tasks.filter(t => t.category === filterCategory);
+        }
+
+        // Group by category
+        const grouped = {};
+        tasks.forEach(t => {
+            if (!grouped[t.category]) grouped[t.category] = [];
+            grouped[t.category].push(t);
+        });
+
+        container.innerHTML = '';
+
+        Object.keys(grouped).sort().forEach(cat => {
+            const catInfo = CATEGORIES[cat] || { name: cat };
+
+            const section = document.createElement('div');
+            section.className = 'manage-category';
+            section.innerHTML = `<h4 class="manage-category-title">${catInfo.name} <span class="manage-category-count">${grouped[cat].length}</span></h4>`;
+
+            grouped[cat].forEach(task => {
+                const action = this.manageActions[task.id] || 'keep';
+                const row = document.createElement('div');
+                row.className = `manage-row ${action}`;
+                row.dataset.taskId = task.id;
+
+                row.innerHTML = `
+                    <div class="manage-task-info">
+                        <span class="manage-task-name">${task.name}</span>
+                        <span class="manage-task-meta">${task.frequency} · ${task.duration}min${task.assignee !== 'Either' ? ` · ${task.assignee}` : ''}</span>
+                    </div>
+                    <div class="manage-actions">
+                        <button class="manage-btn keep ${action === 'keep' ? 'active' : ''}" data-task-id="${task.id}" data-action="keep" title="keep">keep</button>
+                        <button class="manage-btn pause ${action === 'pause' ? 'active' : ''}" data-task-id="${task.id}" data-action="pause" title="pause">pause</button>
+                        <button class="manage-btn delete ${action === 'delete' ? 'active' : ''}" data-task-id="${task.id}" data-action="delete" title="delete">delete</button>
+                    </div>
+                `;
+
+                section.appendChild(row);
+            });
+
+            container.appendChild(section);
+        });
+
+        // Bind manage action buttons
+        container.querySelectorAll('.manage-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = e.target.dataset.taskId;
+                const action = e.target.dataset.action;
+                this.setManageAction(taskId, action);
+            });
+        });
+
+        this.updateManageStats();
+    }
+
+    setManageAction(taskId, action) {
+        if (action === 'keep') {
+            delete this.manageActions[taskId]; // default is keep
+        } else {
+            this.manageActions[taskId] = action;
+        }
+
+        // Update UI for this row
+        const row = document.querySelector(`.manage-row[data-task-id="${taskId}"]`);
+        if (row) {
+            row.className = `manage-row ${action}`;
+            row.querySelectorAll('.manage-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.action === action);
+            });
+        }
+
+        this.updateManageStats();
+    }
+
+    updateManageStats() {
+        const actions = Object.values(this.manageActions);
+        const pausedCount = actions.filter(a => a === 'pause').length;
+        const deletedCount = actions.filter(a => a === 'delete').length;
+        const totalActive = this.tasks.filter(t => !t.paused).length;
+        const keptCount = totalActive - pausedCount - deletedCount;
+
+        const keptEl = document.getElementById('manage-kept');
+        const pausedEl = document.getElementById('manage-paused-count');
+        const deletedEl = document.getElementById('manage-deleted');
+
+        if (keptEl) keptEl.textContent = `${keptCount} kept`;
+        if (pausedEl) pausedEl.textContent = `${pausedCount} paused`;
+        if (deletedEl) deletedEl.textContent = `${deletedCount} deleted`;
+    }
+
+    // =========================================
     // EVENT BINDING
     // =========================================
 
@@ -1198,6 +1356,21 @@ class HouseholdTracker {
                 e.target.classList.add('active');
                 this.renderBatchView(e.target.dataset.batch);
             });
+        });
+
+        // Manage mode
+        document.getElementById('manage-mode-btn')?.addEventListener('click', () => {
+            if (this.manageMode) {
+                this.exitManageMode();
+            } else {
+                this.enterManageMode();
+            }
+        });
+        document.getElementById('manage-done-btn')?.addEventListener('click', () => {
+            this.exitManageMode();
+        });
+        document.getElementById('manage-category-filter')?.addEventListener('change', (e) => {
+            this.renderManageList(e.target.value);
         });
 
         // Add task FAB

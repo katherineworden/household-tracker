@@ -388,18 +388,6 @@ const DEFAULT_TASKS = [
         notes: 'Quick wipe to prevent buildup',
         isDefault: true
     },
-    {
-        id: 'bath-002',
-        name: 'Squeegee shower door/walls',
-        category: 'bathroom',
-        frequency: 'daily',
-        duration: 1,
-        location: 'bathroom',
-        assignee: 'Either',
-        supplies: 'Squeegee',
-        notes: 'Do it right after showering - prevents soap scum',
-        isDefault: true
-    },
 
     // Weekly Bathroom
     {

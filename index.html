@@ -155,7 +155,10 @@
             <!-- All Tasks View -->
             <section id="all-view" class="tab-content">
                 <div class="view-header">
-                    <h2>all tasks</h2>
+                    <div class="view-header-row">
+                        <h2>all tasks</h2>
+                        <button id="manage-mode-btn" class="btn btn-secondary">manage</button>
+                    </div>
                     <div class="filter-controls">
                         <select id="category-filter" class="filter-select">
                             <option value="all">all categories</option>
@@ -186,6 +189,28 @@
                 <!-- Category Tip Banner (shows when filtering) -->
                 <div id="category-tip-banner" class="category-tip-banner hidden"></div>
                 <div id="all-tasks" class="task-list grouped"></div>
+
+                <!-- Manage Mode (hidden by default) -->
+                <div id="manage-mode" class="manage-mode hidden">
+                    <div class="manage-header">
+                        <div class="manage-header-info">
+                            <h3>manage tasks</h3>
+                            <p class="manage-description">swipe through all tasks — keep, pause, or delete</p>
+                        </div>
+                        <button id="manage-done-btn" class="btn btn-primary">done</button>
+                    </div>
+                    <div class="manage-stats">
+                        <span id="manage-kept" class="manage-stat kept">0 kept</span>
+                        <span id="manage-paused-count" class="manage-stat paused">0 paused</span>
+                        <span id="manage-deleted" class="manage-stat deleted">0 deleted</span>
+                    </div>
+                    <div class="manage-filter">
+                        <select id="manage-category-filter" class="filter-select">
+                            <option value="all">all categories</option>
+                        </select>
+                    </div>
+                    <div id="manage-list" class="manage-list"></div>
+                </div>
             </section>
 
             <!-- Batch Mode View -->

@@ -1611,6 +1611,186 @@ body.focus-mode .app-header h1::after {
 }
 
 /* =========================================
+   MANAGE MODE - Bulk task curation
+   ========================================= */
+
+.view-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.manage-mode {
+    animation: fadeIn 0.3s ease;
+}
+
+.manage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-md);
+}
+
+.manage-header-info h3 {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.manage-description {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.manage-stats {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(61, 50, 41, 0.05);
+}
+
+.manage-stat {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.manage-stat.kept { color: var(--accent-success); }
+.manage-stat.paused { color: var(--text-muted); }
+.manage-stat.deleted { color: var(--accent-danger); }
+
+.manage-filter {
+    margin-bottom: var(--space-md);
+}
+
+.manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.manage-category-title {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-xs);
+    border-bottom: 2px solid rgba(61, 50, 41, 0.08);
+}
+
+.manage-category-count {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+.manage-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    margin-bottom: 2px;
+    border-left: 3px solid var(--accent-success);
+    transition: all var(--transition-fast);
+}
+
+.manage-row.pause {
+    border-left-color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.manage-row.delete {
+    border-left-color: var(--accent-danger);
+    opacity: 0.4;
+}
+
+.manage-row.delete .manage-task-name {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.manage-task-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.manage-task-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.manage-task-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.manage-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.manage-btn {
+    padding: 4px 10px;
+    border: 1px solid rgba(61, 50, 41, 0.1);
+    border-radius: 4px;
+    background: transparent;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+}
+
+.manage-btn:hover {
+    background: rgba(61, 50, 41, 0.04);
+}
+
+.manage-btn.keep.active {
+    background: var(--accent-success);
+    color: #f5f0e8;
+    border-color: var(--accent-success);
+}
+
+.manage-btn.pause.active {
+    background: var(--text-muted);
+    color: #f5f0e8;
+    border-color: var(--text-muted);
+}
+
+.manage-btn.delete.active {
+    background: var(--accent-danger);
+    color: #f5f0e8;
+    border-color: var(--accent-danger);
+}
+
+/* Touch targets for manage buttons */
+@media (pointer: coarse) {
+    .manage-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .manage-row {
+        padding: var(--space-md);
+    }
+}
+
+/* =========================================
    SYNC UI
    ========================================= */
 
